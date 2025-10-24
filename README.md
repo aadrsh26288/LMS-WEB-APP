@@ -1,5 +1,24 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Luma Learn LMS Chat Assistant
+
+This project features an intelligent chat assistant powered by DeepSeek AI (via OpenRouter) that can help with LMS-related tasks and answer general questions.
+
+### Features
+
+- **In-scope responses**: Pattern-matched responses for LMS-specific queries (courses, schedules, progress, etc.)
+- **Out-of-scope responses**: DeepSeek AI model handles general questions outside the LMS domain
+- **Streaming responses**: Real-time token streaming for better user experience
+- **Smart navigation**: Automatic navigation to relevant dashboard sections
+
+### Environment Setup
+
+Create a `.env.local` file in the root directory with the following:
+
+```bash
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+```
+
 ## Getting Started
 
 First, run the development server:

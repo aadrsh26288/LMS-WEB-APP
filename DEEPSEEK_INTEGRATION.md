@@ -89,12 +89,42 @@ This document describes the integration of DeepSeek AI model via OpenRouter API 
 
 **Response**: DeepSeek model provides a general knowledge answer: "The capital of France is **Paris**! 😊"
 
+## Fallback Responses
+
+When the OpenRouter API key is not configured, the assistant provides basic fallback responses for common questions:
+
+### Supported Fallback Questions
+- **"What is JavaScript?"** - Basic explanation of JavaScript
+- **"What is Python?"** - Basic explanation of Python
+- **"What is HTML/CSS?"** - Basic explanation of HTML and CSS
+
+Each fallback response includes a reminder to configure the API key for full AI-powered answers.
+
+### Other Out-of-Scope Questions
+For questions not covered by fallbacks, the assistant provides setup instructions:
+- How to get an OpenRouter API key
+- How to configure the `.env.local` file
+- Reminder that LMS-related tasks still work without the API key
+
 ## Error Handling
 
-If the DeepSeek API call fails:
-- Catches the error silently
-- Returns a fallback message: "I apologize, but I'm having trouble processing your question right now. Please try asking something related to the LMS, or try again later."
-- Logs the error to console for debugging
+The integration includes comprehensive error handling:
+
+### Missing API Key
+If `OPENROUTER_API_KEY` is not set:
+- Logs warning: "OpenRouter API key not configured - using fallback responses"
+- Uses pattern-matched fallback responses (see above)
+- Provides helpful setup instructions for unmatched questions
+
+### Authentication Failure (401)
+If the API key is invalid:
+- Logs error to console with full error details
+- Returns message: "I'd like to help with general questions, but the API authentication failed. Please check that your OPENROUTER_API_KEY is valid. Get a new key from https://openrouter.ai/keys if needed."
+
+### Other API Errors
+For any other API failures:
+- Logs error to console for debugging
+- Returns fallback message: "I apologize, but I'm having trouble processing your question right now. Please try asking something related to the LMS, or try again later."
 
 ## Testing
 

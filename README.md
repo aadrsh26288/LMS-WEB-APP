@@ -13,11 +13,23 @@ This project features an intelligent chat assistant powered by DeepSeek AI (via 
 
 ### Environment Setup
 
-Create a `.env.local` file in the root directory with the following:
+To enable the AI-powered chat assistant for general questions, you need to configure an OpenRouter API key:
 
-```bash
-OPENROUTER_API_KEY=your_openrouter_api_key_here
-```
+1. **Get an API key**:
+   - Visit [https://openrouter.ai/keys](https://openrouter.ai/keys)
+   - Sign up or log in to your account
+   - Create a new API key
+
+2. **Configure the environment variable**:
+   - Create a `.env.local` file in the root directory (you can copy from `.env.local.example`)
+   - Add your API key:
+     ```bash
+     OPENROUTER_API_KEY=your_openrouter_api_key_here
+     ```
+
+3. **Restart the development server** if it's already running
+
+> **Note**: Without the API key, the assistant will only answer LMS-specific questions using pre-defined responses. General questions (like "what is javascript") will show a configuration error message.
 
 ## Getting Started
 

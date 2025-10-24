@@ -11,8 +11,12 @@ let openrouter: OpenAI | null = null;
 
 function getOpenRouterClient(): OpenAI {
   if (!openrouter) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENROUTER_API_KEY environment variable is not set");
+    }
     openrouter = new OpenAI({
-      apiKey: "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",
+      apiKey,
       baseURL: "https://openrouter.ai/api/v1",
     });
   }
@@ -70,29 +74,55 @@ async function buildAssistantResponse(
       "Here's what I can help with: navigating between dashboards, preparing cohorts, summarizing analytics, or answering general LMS questions. Let me know what you'd like to accomplish and I'll walk you through it.";
   } else {
     isOutOfScope = true;
-    try {
-      const client = getOpenRouterClient();
-      const completion = await client.chat.completions.create({
-        model: "deepseek/deepseek-chat",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a helpful assistant in a Learning Management System (LMS) called Luma Learn. While your primary purpose is to help with LMS-related tasks, you can answer general questions too. Keep responses concise and friendly.",
-          },
-          {
-            role: "user",
-            content: question,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-      });
+    
+    // Check if API key is configured before attempting API call
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    
+    if (!apiKey) {
+      // Provide basic fallback responses for common questions without API
+      console.warn("OpenRouter API key not configured - using fallback responses");
+      
+      if (/what is (javascript|js)/.test(normalized)) {
+        answer = "JavaScript is a popular programming language used for web development. It allows you to create interactive and dynamic web pages. To get full AI-powered answers to general questions, please configure the OPENROUTER_API_KEY in your .env.local file (get it from https://openrouter.ai/keys).";
+      } else if (/what is (python|py)/.test(normalized)) {
+        answer = "Python is a high-level programming language known for its simplicity and readability. It's widely used for web development, data science, automation, and more. To get full AI-powered answers, please configure the OPENROUTER_API_KEY in your .env.local file.";
+      } else if (/what is (html|css)/.test(normalized)) {
+        answer = "HTML and CSS are fundamental web technologies. HTML structures web content, while CSS styles it. Together they create the visual layout of websites. For more detailed answers, please configure the OPENROUTER_API_KEY in your .env.local file.";
+      } else {
+        answer = "I'd like to help with general questions! To enable AI-powered responses for all types of questions, please set up the OpenRouter API key:\n\n1. Get a key from https://openrouter.ai/keys\n2. Add it to .env.local as OPENROUTER_API_KEY\n3. Restart the server\n\nFor now, I can still help you with LMS-related tasks like managing courses, tracking progress, and scheduling!";
+      }
+    } else {
+      try {
+        const client = getOpenRouterClient();
+        const completion = await client.chat.completions.create({
+          model: "deepseek/deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a helpful assistant in a Learning Management System (LMS) called Luma Learn. While your primary purpose is to help with LMS-related tasks, you can answer general questions too. Keep responses concise and friendly.",
+            },
+            {
+              role: "user",
+              content: question,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        });
 
-      answer = completion.choices[0]?.message?.content || "I'm not sure how to help with that. Could you try rephrasing your question?";
-    } catch {
-      answer =
-        "I apologize, but I'm having trouble processing your question right now. Please try asking something related to the LMS, or try again later.";
+        answer = completion.choices[0]?.message?.content || "I'm not sure how to help with that. Could you try rephrasing your question?";
+      } catch (error) {
+        console.error("DeepSeek API error:", error);
+        
+        // Check if it's an authentication error
+        if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
+          answer = "I'd like to help with general questions, but the API authentication failed. Please check that your OPENROUTER_API_KEY is valid. Get a new key from https://openrouter.ai/keys if needed.";
+        } else {
+          answer =
+            "I apologize, but I'm having trouble processing your question right now. Please try asking something related to the LMS, or try again later.";
+        }
+      }
     }
   }
 

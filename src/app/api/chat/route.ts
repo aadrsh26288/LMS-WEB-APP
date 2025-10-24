@@ -6,10 +6,18 @@ import type { NavigationIntent } from "@/lib/chat/types";
 
 export const runtime = "nodejs";
 
-const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+// Lazy initialization to avoid build-time errors when env vars are not available
+let openrouter: OpenAI | null = null;
+
+function getOpenRouterClient(): OpenAI {
+  if (!openrouter) {
+    openrouter = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY || "dummy-key-for-build",
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+  }
+  return openrouter;
+}
 
 interface ChatPayload {
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
@@ -63,7 +71,8 @@ async function buildAssistantResponse(
   } else {
     isOutOfScope = true;
     try {
-      const completion = await openrouter.chat.completions.create({
+      const client = getOpenRouterClient();
+      const completion = await client.chat.completions.create({
         model: "deepseek/deepseek-chat",
         messages: [
           {

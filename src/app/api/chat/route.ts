@@ -11,7 +11,7 @@ let openrouter: OpenAI | null = null;
 
 function getOpenRouterClient(): OpenAI {
   if (!openrouter) {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = "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";
     if (!apiKey) {
       throw new Error("OPENROUTER_API_KEY environment variable is not set");
     }

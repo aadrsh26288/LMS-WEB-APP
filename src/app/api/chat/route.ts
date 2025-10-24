@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
 import { detectNavigationIntent } from "@/lib/chat/intent";
 import type { NavigationIntent } from "@/lib/chat/types";
 
 export const runtime = "nodejs";
+
+const openrouter = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
 
 interface ChatPayload {
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
@@ -13,11 +19,28 @@ interface ChatPayload {
 interface AssistantResponse {
   answer: string;
   intent: NavigationIntent | null;
+  isOutOfScope?: boolean;
 }
 
-function buildAssistantResponse(question: string, context?: Record<string, unknown>): AssistantResponse {
+function isInScopeQuestion(question: string): boolean {
+  const normalized = question.toLowerCase();
+  return (
+    /upload|material|lesson|resource/.test(normalized) ||
+    /progress|status|completion|report/.test(normalized) ||
+    /office hour|schedule|calendar|meeting/.test(normalized) ||
+    /announcement|message|communication/.test(normalized) ||
+    /support|trouble|issue|ticket/.test(normalized) ||
+    /course|curriculum|module|dashboard|overview|home|chat|assistant|ask luma/.test(normalized)
+  );
+}
+
+async function buildAssistantResponse(
+  question: string,
+  _context?: Record<string, unknown>
+): Promise<AssistantResponse> {
   const normalized = question.toLowerCase();
   let answer = "";
+  let isOutOfScope = false;
 
   if (/upload|material|lesson|resource/.test(normalized)) {
     answer =
@@ -34,9 +57,34 @@ function buildAssistantResponse(question: string, context?: Record<string, unkno
   } else if (/support|trouble|issue|ticket/.test(normalized)) {
     answer =
       "If something feels off, the Support workspace has guided troubleshooting and a quick ticket form. Meanwhile, describe the issue and I can walk you through immediate fixes.";
-  } else {
+  } else if (isInScopeQuestion(question)) {
     answer =
       "Here's what I can help with: navigating between dashboards, preparing cohorts, summarizing analytics, or answering general LMS questions. Let me know what you'd like to accomplish and I'll walk you through it.";
+  } else {
+    isOutOfScope = true;
+    try {
+      const completion = await openrouter.chat.completions.create({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a helpful assistant in a Learning Management System (LMS) called Luma Learn. While your primary purpose is to help with LMS-related tasks, you can answer general questions too. Keep responses concise and friendly.",
+          },
+          {
+            role: "user",
+            content: question,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      answer = completion.choices[0]?.message?.content || "I'm not sure how to help with that. Could you try rephrasing your question?";
+    } catch {
+      answer =
+        "I apologize, but I'm having trouble processing your question right now. Please try asking something related to the LMS, or try again later.";
+    }
   }
 
   const intent = detectNavigationIntent(question);
@@ -44,6 +92,7 @@ function buildAssistantResponse(question: string, context?: Record<string, unkno
   return {
     answer,
     intent,
+    isOutOfScope,
   };
 }
 
@@ -73,7 +122,7 @@ export async function POST(request: Request) {
 
   try {
     payload = (await request.json()) as ChatPayload;
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Invalid request body" },
       { status: 400 }
@@ -96,7 +145,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { answer, intent } = buildAssistantResponse(lastMessage.content, payload.context);
+  const { answer, intent } = await buildAssistantResponse(lastMessage.content, payload.context);
   const chunks = chunkAnswer(answer);
   const encoder = new TextEncoder();
 

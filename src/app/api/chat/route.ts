@@ -12,7 +12,7 @@ let openrouter: OpenAI | null = null;
 function getOpenRouterClient(): OpenAI {
   if (!openrouter) {
     openrouter = new OpenAI({
-      apiKey: "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" || "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",
+      apiKey: "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",
       baseURL: "https://openrouter.ai/api/v1",
     });
   }

@@ -9,8 +9,8 @@ This document describes the integration of DeepSeek AI model via OpenRouter API 
 ### 1. Dependencies
 - **openai** package (v6.6.0) - Compatible with OpenRouter API
 
-### 2. Environment Variables
-- **OPENROUTER_API_KEY** - API key for OpenRouter service (stored in `.env.local`)
+### 2. API Configuration
+- **OpenRouter API Key** - Hardcoded directly in the application for immediate use
 
 ### 3. Code Changes
 
@@ -69,13 +69,9 @@ This document describes the integration of DeepSeek AI model via OpenRouter API 
 }
 ```
 
-### Environment Setup
+### Configuration
 
-1. Create a `.env.local` file in the root directory
-2. Add your OpenRouter API key:
-   ```bash
-   OPENROUTER_API_KEY=your_api_key_here
-   ```
+The OpenRouter API key is pre-configured in the application. No environment setup is required.
 
 ## Examples
 
@@ -89,37 +85,18 @@ This document describes the integration of DeepSeek AI model via OpenRouter API 
 
 **Response**: DeepSeek model provides a general knowledge answer: "The capital of France is **Paris**! 😊"
 
-## Fallback Responses
+## Out-of-Scope Handling
 
-When the OpenRouter API key is not configured, the assistant provides basic fallback responses for common questions:
-
-### Supported Fallback Questions
-- **"What is JavaScript?"** - Basic explanation of JavaScript
-- **"What is Python?"** - Basic explanation of Python
-- **"What is HTML/CSS?"** - Basic explanation of HTML and CSS
-
-Each fallback response includes a reminder to configure the API key for full AI-powered answers.
-
-### Other Out-of-Scope Questions
-For questions not covered by fallbacks, the assistant provides setup instructions:
-- How to get an OpenRouter API key
-- How to configure the `.env.local` file
-- Reminder that LMS-related tasks still work without the API key
+All out-of-scope questions are handled by the DeepSeek AI model via OpenRouter. The API key is pre-configured, so the assistant can immediately answer general knowledge questions while maintaining context about being part of the Luma Learn LMS.
 
 ## Error Handling
 
 The integration includes comprehensive error handling:
 
-### Missing API Key
-If `OPENROUTER_API_KEY` is not set:
-- Logs warning: "OpenRouter API key not configured - using fallback responses"
-- Uses pattern-matched fallback responses (see above)
-- Provides helpful setup instructions for unmatched questions
-
 ### Authentication Failure (401)
-If the API key is invalid:
+If the API key is invalid or expired:
 - Logs error to console with full error details
-- Returns message: "I'd like to help with general questions, but the API authentication failed. Please check that your OPENROUTER_API_KEY is valid. Get a new key from https://openrouter.ai/keys if needed."
+- Returns message: "I'd like to help with general questions, but the API authentication failed. The API key may be invalid or expired."
 
 ### Other API Errors
 For any other API failures:
